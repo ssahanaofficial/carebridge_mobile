@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CareBridge Mobile Application
 
 An enterprise-grade emergency medical response and resource allocation mobile application built with **React Native**, **Expo SDK 58**, **Expo Router**, and **Firebase Firestore / Auth**.
@@ -142,3 +143,6 @@ When EAS finishes building in the cloud, it outputs a direct download link and Q
 - **TypeScript Static Verification**: `npx tsc --noEmit` verified with **0 errors**.
 - **Cross-Platform Compatibility**: Tested on Android, iOS, and Expo Go.
 - **Backend Integrity**: Directly integrated with live Firestore database `carebridge-90059`.
+=======
+# carebridge_mobile
+>>>>>>> origin/main
