@@ -63,9 +63,14 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
       <View style={styles.leftRow}>
         <CareBridgeLogoIcon size={34} />
         <View style={styles.titleCol}>
-          <Text style={styles.brandTitle}>
-            Care<Text style={styles.brandAccent}>Bridge</Text>
-          </Text>
+          <View style={styles.brandTitleRow}>
+            <Text style={styles.brandTitle}>
+              Care<Text style={styles.brandAccent}>Bridge</Text>
+            </Text>
+            <View style={styles.emergencyPill}>
+              <Text style={styles.emergencyPillText}>EMERGENCY</Text>
+            </View>
+          </View>
           {title ? (
             <Text style={styles.pageTitle}>{title}</Text>
           ) : (
@@ -138,11 +143,30 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F3868',
+    color: '#0F172A',
     letterSpacing: -0.3,
   },
+  brandTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  emergencyPill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  emergencyPillText: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#C2410C',
+    letterSpacing: 0.5,
+  },
   brandAccent: {
-    color: Colors.primary,
+    color: '#0D9488',
   },
   pageTitle: {
     fontSize: 11,

@@ -1,27 +1,175 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Circle, Path, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Colors } from '../../constants/colors';
 
 export function CareBridgeLogoIcon({ size = 36 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <Circle cx="16" cy="18" r="6" fill="#0E7490" />
-      <Circle cx="32" cy="18" r="6" fill="#0284C7" />
-      <Circle cx="24" cy="11" r="5" fill="#00707E" />
+      <Defs>
+        <LinearGradient id="cbLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor="#0EA5E9" />
+          <Stop offset="100%" stopColor="#0D9488" />
+        </LinearGradient>
+      </Defs>
+      <Rect x="2" y="2" width="44" height="44" rx="13" fill="url(#cbLogoGrad)" />
       <Path
-        d="M10 36C10 29.3726 15.3726 24 22 24H26C32.6274 24 38 29.3726 38 36C38 37.1046 37.1046 38 36 38H12C10.8954 38 10 37.1046 10 36Z"
-        fill="#0F4C81"
-      />
-      <Path
-        d="M17 38C17 34.134 20.134 31 24 31C27.866 31 31 34.134 31 38"
-        stroke="#E0F2FE"
-        strokeWidth="3"
+        d="M8.5 25.5H15L17.5 28L21.5 11L27 37L30.5 22.5L33 25.5H39.5"
+        stroke="#FFFFFF"
+        strokeWidth="3.6"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
 }
+
+export function CareBridgeBrand({
+  size = 40,
+  showBadge = true,
+  showSubtitle = true,
+  layout = 'horizontal',
+}: {
+  size?: number;
+  showBadge?: boolean;
+  showSubtitle?: boolean;
+  layout?: 'horizontal' | 'vertical' | 'hero';
+}) {
+  if (layout === 'hero' || layout === 'vertical') {
+    return (
+      <View style={brandStyles.heroWrap}>
+        <View style={brandStyles.iconShadow}>
+          <CareBridgeLogoIcon size={size} />
+        </View>
+        <View style={brandStyles.heroTitleRow}>
+          <Text style={brandStyles.heroTitle}>
+            Care<Text style={brandStyles.brandTeal}>Bridge</Text>
+          </Text>
+          {showBadge && (
+            <View style={brandStyles.emergencyBadge}>
+              <Text style={brandStyles.emergencyBadgeText}>EMERGENCY</Text>
+            </View>
+          )}
+        </View>
+        {showSubtitle && (
+          <Text style={brandStyles.heroSubtitle}>Healthcare Resource Coordination Platform</Text>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View style={brandStyles.rowWrap}>
+      <CareBridgeLogoIcon size={size} />
+      <View style={brandStyles.textCol}>
+        <View style={brandStyles.inlineTitleRow}>
+          <Text style={brandStyles.titleText}>
+            Care<Text style={brandStyles.brandTeal}>Bridge</Text>
+          </Text>
+          {showBadge && (
+            <View style={brandStyles.emergencyBadgeSm}>
+              <Text style={brandStyles.emergencyBadgeTextSm}>EMERGENCY</Text>
+            </View>
+          )}
+        </View>
+        {showSubtitle && (
+          <Text style={brandStyles.subtitleText}>Healthcare Resource Coordination Platform</Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const brandStyles = StyleSheet.create({
+  rowWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  textCol: {
+    justifyContent: 'center',
+  },
+  inlineTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  brandTeal: {
+    color: '#0D9488',
+  },
+  emergencyBadgeSm: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  emergencyBadgeTextSm: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#C2410C',
+    letterSpacing: 0.5,
+  },
+  subtitleText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  heroWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconShadow: {
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 4,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+  },
+  emergencyBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  emergencyBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#C2410C',
+    letterSpacing: 0.8,
+  },
+});
 
 export function HospitalBedIcon({ isSelected = false, size = 48 }: { isSelected?: boolean; size?: number }) {
   const primary = isSelected ? '#FFFFFF' : '#00707E';
