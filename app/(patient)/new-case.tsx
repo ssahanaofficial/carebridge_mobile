@@ -10,6 +10,7 @@ import {
   Alert,
   TextInput,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +33,7 @@ import {
 } from '../../services/hospitalDirectoryService';
 import {
   getCurrentPatientLocation,
+  evaluateGpsAccuracy,
   DEFAULT_EMERGENCY_COORDINATES,
   type GpsLocationData,
 } from '../../services/gpsLocationService';
@@ -141,26 +143,46 @@ export default function NewCaseScreen() {
     return () => unsubHosp();
   }, []);
 
-  // GPS auto-detection on mount
+  // Real-time GPS accuracy telemetry evaluation
+  const gpsEvaluation = useMemo(() => {
+    return evaluateGpsAccuracy(patientLocation.accuracy);
+  }, [patientLocation.accuracy]);
+
+  // GPS tracking & high-precision position acquisition
   const handleDetectLocation = async () => {
     setIsLoadingLocation(true);
-    const res = await getCurrentPatientLocation();
-    setIsLoadingLocation(false);
-    if (res.success && res.data) {
-      setPatientLocation(res.data);
-      setLocationPermissionDenied(false);
-      if (res.data.address) {
-        setIncidentAddress(res.data.address);
-        setSearchLocation(res.data.address);
+    try {
+      const res = await getCurrentPatientLocation();
+      setIsLoadingLocation(false);
+      if (res.success && res.data) {
+        setPatientLocation(res.data);
+        setLocationPermissionDenied(false);
+        const resolvedAddress =
+          res.data.address ||
+          `Emergency GPS (${res.data.latitude.toFixed(4)}, ${res.data.longitude.toFixed(4)}) - Hubballi Region`;
+        setIncidentAddress(resolvedAddress);
+        setSearchLocation(resolvedAddress);
+        setFormErrors((prev) => {
+          const next = { ...prev };
+          delete next.incidentAddress;
+          return next;
+        });
+        if (res.data.accuracyTier === 'poor') {
+          setShowManualSearch(true);
+        }
+      } else {
+        if (res.permissionDenied) {
+          setLocationPermissionDenied(true);
+          setShowManualSearch(true);
+          setFormErrors((prev) => ({
+            ...prev,
+            incidentAddress: 'Location access was denied or unavailable. Please enter address manually.',
+          }));
+        }
       }
-      if (res.data.accuracyTier === 'poor') {
-        setShowManualSearch(true);
-      }
-    } else {
-      if (res.permissionDenied) {
-        setLocationPermissionDenied(true);
-        setShowManualSearch(true);
-      }
+    } catch (err) {
+      setIsLoadingLocation(false);
+      console.warn('[CareBridge GPS] Failed to track location:', err);
     }
   };
 
@@ -935,18 +957,113 @@ export default function NewCaseScreen() {
               </View>
             )}
 
-            <Input
-              label="Incident Location / Pickup Address"
-              placeholder="e.g. Vidyanagar, PB Road, Hubballi"
-              value={incidentAddress}
-              onChangeText={(t) => {
-                setIncidentAddress(t);
-                if (formErrors.incidentAddress) setFormErrors((p) => ({ ...p, incidentAddress: '' }));
-              }}
-              error={formErrors.incidentAddress}
-              leftIcon={<MapPin size={16} color={Colors.critical} />}
-              required
-            />
+            {/* Incident Location / Pickup Address with Live GPS Tracking */}
+            <View style={styles.incidentLocationContainer}>
+              <View style={styles.incidentLocationHeader}>
+                <Text style={styles.incidentLabel}>
+                  Incident Location / Pickup Address <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={[styles.gpsActionBtn, isLoadingLocation && styles.gpsActionBtnDisabled]}
+                  onPress={handleDetectLocation}
+                  disabled={isLoadingLocation}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Track exact GPS location"
+                >
+                  {isLoadingLocation ? (
+                    <ActivityIndicator size="small" color="#00707E" />
+                  ) : (
+                    <Navigation size={13} color="#00707E" />
+                  )}
+                  <Text style={styles.gpsActionBtnText}>
+                    {isLoadingLocation ? 'Locating...' : 'Track Exact GPS'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={[styles.incidentInputRow, formErrors.incidentAddress ? styles.incidentInputRowError : null]}>
+                <View style={styles.incidentInputLeftIcon}>
+                  <MapPin size={16} color={Colors.critical} />
+                </View>
+                <TextInput
+                  placeholder="Street address, landmark, building name, Hubballi"
+                  placeholderTextColor={Colors.textMuted}
+                  value={incidentAddress}
+                  onChangeText={(t) => {
+                    setIncidentAddress(t);
+                    if (formErrors.incidentAddress) setFormErrors((p) => ({ ...p, incidentAddress: '' }));
+                  }}
+                  style={styles.incidentTextInput}
+                />
+                <TouchableOpacity
+                  style={styles.incidentInputRightBtn}
+                  onPress={handleDetectLocation}
+                  disabled={isLoadingLocation}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Track exact satellite GPS location"
+                >
+                  {isLoadingLocation ? (
+                    <ActivityIndicator size="small" color="#00707E" />
+                  ) : (
+                    <Navigation size={15} color="#00707E" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {formErrors.incidentAddress ? (
+                <View style={styles.incidentErrorRow}>
+                  <AlertCircle size={12} color={Colors.critical} />
+                  <Text style={styles.incidentErrorText}>{formErrors.incidentAddress}</Text>
+                </View>
+              ) : null}
+
+              {/* Real-time GPS Telemetry Status & Precision Card */}
+              <View style={styles.gpsTelemetryCard}>
+                <View style={styles.gpsTelemetryHeader}>
+                  <View style={styles.gpsStatusRow}>
+                    <View
+                      style={[
+                        styles.gpsStatusDot,
+                        {
+                          backgroundColor: locationPermissionDenied
+                            ? '#EF4444'
+                            : isLoadingLocation
+                            ? '#F59E0B'
+                            : '#10B981',
+                        },
+                      ]}
+                    />
+                    <Text style={styles.gpsStatusText}>
+                      {locationPermissionDenied
+                        ? 'GPS Inactive (Permission Denied)'
+                        : isLoadingLocation
+                        ? 'Acquiring Satellite GPS Fix...'
+                        : 'Live Satellite GPS Locked'}
+                    </Text>
+                  </View>
+
+                  <View style={[styles.gpsAccuracyBadge, { backgroundColor: gpsEvaluation.bgColor }]}>
+                    <Text style={[styles.gpsAccuracyBadgeText, { color: gpsEvaluation.color }]}>
+                      {gpsEvaluation.label}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.gpsCoordinatesRow}>
+                  <Text style={styles.gpsCoordinatesLabel}>Exact Coordinates:</Text>
+                  <Text style={styles.gpsCoordinatesText}>
+                    {patientLocation.latitude.toFixed(5)}° N, {patientLocation.longitude.toFixed(5)}° E
+                  </Text>
+                </View>
+
+                <Text style={styles.gpsTelemetryDesc}>
+                  {locationPermissionDenied
+                    ? 'Device location access was denied. Tap "Track Exact GPS" above to prompt permissions or enter address manually.'
+                    : gpsEvaluation.description}
+                </Text>
+              </View>
+            </View>
           </Card>
 
           {/* ======================================================= */}
@@ -1573,5 +1690,142 @@ const styles = StyleSheet.create({
   },
   selectRadioBtnTextActive: {
     color: '#FFFFFF',
+  },
+  incidentLocationContainer: {
+    marginBottom: 12,
+  },
+  incidentLocationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  incidentLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  requiredStar: {
+    color: Colors.critical,
+  },
+  gpsActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#CCFBF1',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  gpsActionBtnDisabled: {
+    opacity: 0.6,
+  },
+  gpsActionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00707E',
+  },
+  incidentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.inputBorder,
+    borderRadius: 12,
+  },
+  incidentInputRowError: {
+    borderColor: Colors.critical,
+    backgroundColor: Colors.criticalBg,
+  },
+  incidentInputLeftIcon: {
+    paddingLeft: 12,
+  },
+  incidentTextInput: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: Colors.text,
+  },
+  incidentInputRightBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  incidentErrorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  incidentErrorText: {
+    color: Colors.critical,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  gpsTelemetryCard: {
+    marginTop: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    padding: 10,
+  },
+  gpsTelemetryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  gpsStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  gpsStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  gpsStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  gpsAccuracyBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  gpsAccuracyBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  gpsCoordinatesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  gpsCoordinatesLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  gpsCoordinatesText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F172A',
+    fontVariant: ['tabular-nums'],
+  },
+  gpsTelemetryDesc: {
+    fontSize: 10,
+    lineHeight: 14,
+    color: '#64748B',
   },
 });
