@@ -8,7 +8,13 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.carebridge.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CareBridge requires GPS access to locate nearby emergency hospitals, beds, and dispatch services within a 2 km radius.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "CareBridge requires GPS access to provide real-time location sharing during emergency ambulance dispatch.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
